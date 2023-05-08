@@ -56,6 +56,7 @@
 #define app_message_id_5_d (0x05<<2|message_size_4_bytes_d)
 #define app_message_id_6_d (0x06<<2|message_size_8_bytes_d)
 
+//<<2|0x01) for parity
 
 
 /*******************************************************************************
@@ -91,7 +92,7 @@ int main(void)
     NVIC_SetPriority(SLAVE_UART_RX_TX_IRQn, 5);
 
 
-    if (xTaskCreate(test_task, "test_task", test_task_heap_size_d, NULL, init_task_PRIORITY, NULL) != pdPASS)
+    if (xTaskCreate(test_task, "test_task", test_task_heap_size_d*2, NULL, init_task_PRIORITY, NULL) != pdPASS)
     {
         PRINTF("Init Task creation failed!.\r\n");
         while (1)
@@ -118,8 +119,10 @@ static void test_task(void *pvParameters)
 	node_config.bitrate = 9600;
 	node_config.uartBase = MASTER_UART;
 	node_config.srcclk = MASTER_UART_CLK_FREQ;
+	node_config.irq = MASTER_UART_RX_TX_IRQn;
 	node_config.skip_uart_init = 0;
 	memset(node_config.messageTable,0, (sizeof(node_config.messageTable[0])*lin1d3_max_supported_messages_per_node_cfg_d));
+
 	/* Init Master node */
 	master_handle = lin1d3_InitNode(node_config);
 #if !defined(JUST_MASTER)
@@ -128,6 +131,7 @@ static void test_task(void *pvParameters)
 	node_config.bitrate = 9600;
 	node_config.uartBase = SLAVE_UART;
 	node_config.srcclk = SLAVE_UART_CLK_FREQ;
+	node_config.irq = SLAVE_UART_RX_TX_IRQn;
 	node_config.skip_uart_init = 0;
 	memset(node_config.messageTable,0, (sizeof(node_config.messageTable[0])*lin1d3_max_supported_messages_per_node_cfg_d));
 	node_config.messageTable[0].ID = app_message_id_1_d;
@@ -147,6 +151,7 @@ static void test_task(void *pvParameters)
 	node_config.bitrate = 9600;
 	node_config.uartBase = LOCAL_SLAVE_UART;
 	node_config.srcclk = LOCAL_SLAVE_UART_CLK_FREQ;
+	node_config.irq = LOCAL_SLAVE_UART_RX_TX_IRQn;
 	memset(node_config.messageTable,0, (sizeof(node_config.messageTable[0])*lin1d3_max_supported_messages_per_node_cfg_d));
 	node_config.messageTable[0].ID = app_message_id_4_d;
 	node_config.messageTable[0].rx = 0;
@@ -158,7 +163,7 @@ static void test_task(void *pvParameters)
 	node_config.messageTable[2].rx = 0;
 	node_config.messageTable[2].handler = message_6_callback_local_slave;
 	node_config.messageTable[3].ID = app_message_id_1_d;
-	node_config.messageTable[3].rx= 1;
+	node_config.messageTable[3].rx = 1;
 	node_config.messageTable[3].handler = message_1_callback_local_slave;
 	node_config.skip_uart_init = 1;
 	node_config.uart_rtos_handle = master_handle->uart_rtos_handle;
@@ -241,6 +246,7 @@ static void	message_1_callback_slave(void* message)
 {
 	uint8_t* message_data = (uint8_t*)message;
 	PRINTF("Slave got message 1 request\r\n");
+//	PRINTF(" %b " , app_message_id_1_d);
 	message_data[0] = 79;
 	message_data[1] = 80;
 }

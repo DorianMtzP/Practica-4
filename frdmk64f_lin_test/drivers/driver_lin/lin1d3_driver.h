@@ -59,6 +59,7 @@ typedef struct {
 	uint32_t srcclk;		/* UART Clock */
 	uint32_t bitrate;		/* LIN bitrate to set */
 	lin1d3_messageConfig_t messageTable[lin1d3_max_supported_messages_per_node_cfg_d]; /* Table of supported IDs with its callbacks */
+	int8_t irq;
 }lin1d3_nodeConfig_t;
 
 /*
