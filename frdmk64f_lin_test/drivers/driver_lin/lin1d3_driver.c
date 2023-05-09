@@ -350,7 +350,7 @@ static void slave_task(void *pvParameters)
 				UART_RTOS_Receive(handle->uart_rtos_handle, lin1p3_message, message_size, &n);
 				/* TODO: Check the checksum on the message */
 				chsum = checksum(lin1p3_message , n - 1);
-				if(chsum != lin1p3_message[n]){
+				if(chsum != lin1p3_message[n-1]){
 					continue;
 				}
 				/*If the message is in the table call the message callback */
