@@ -339,7 +339,7 @@ static void slave_task(void *pvParameters)
 				/* TODO: Add the checksum to the message */
 				//ONLY MESSAGE WITHOUT HEADER
 				chsum = (uint8_t *)checksum(lin1p3_message , message_size);
-				PRINTF("chsum %x\n\r", chsum);
+				//PRINTF("chsum %x\n\r", chsum);
 
 				/* Send the message data */
 				UART_RTOS_Send(handle->uart_rtos_handle, (uint8_t *)lin1p3_message, message_size-1);
