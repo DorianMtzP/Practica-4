@@ -38,11 +38,11 @@ bool getBit(int num, int i)
 }
 
 uint8_t calculate_parity(uint8_t header){
-
 	uint8_t bit = 0;
 	uint8_t parityEv = 0;
 	uint8_t parityOd = 0;
 
+	//Calculate Even parity bit
     for (int i = 7; i > 2; i--){
     	if(7 == i){
     		bit = getBit(header,  i);
@@ -53,6 +53,7 @@ uint8_t calculate_parity(uint8_t header){
             parityEv = parityEv^bit;
         }
     }
+    //Calculate Odd parity
     for (int i = 6; i > 1; i--){
 
     	if(6 == i){
@@ -63,31 +64,26 @@ uint8_t calculate_parity(uint8_t header){
             parityOd = parityOd^bit;
         }
     }
-
-    PRINTF("even: %d\r\n", parityEv);
-    PRINTF("odd: %d\r\n", parityOd);
-
-
+    //PRINTF("even: %d\r\n", parityEv);
+    //PRINTF("odd: %d\r\n", parityOd);
     return (parityEv << 1)|parityOd;
 
 }
 
+/*
+ * Calculates Lin 1.3 Classic checksum
+ */
 uint8_t checksum(uint8_t message[] , uint8_t len){
-
 	int checksum = 0;
-	uint8_t cs = 0;
+
 	for(int i = 0; i< len - 1; i++){
 		checksum += message[i];
+		if(checksum >= 0x100)
+			checksum -= 0xff;
 	}
-	if(checksum > 0x100){
-		checksum = checksum - 0xff;
-	}
+	//PRINTF("checksum: %x \r\n", ~((uint8_t)checksum));
 
-	PRINTF("checksum: %x \r\n", (uint8_t)checksum);
-
-	cs = (uint8_t)checksum;
-	return cs;
-
+	return 0xFF&(~((uint8_t)checksum));
 }
 
 /*
@@ -234,11 +230,13 @@ static void master_task(void *pvParameters)
             /* Configure 13bit break transmission */
         	handle->uart_rtos_handle->base->S2 |= (1<<UART_S2_BRK13_SHIFT);
 
+        	/* Send a Break It is just sending one byte 0, *** CHANGE THIS WITH A REAL SYNCH BREAK ****/
+        	//UART_RTOS_Send(handle->uart_rtos_handle, (uint8_t *)&synch_break_byte, 1);
             /* Send the break signal */
         	handle->uart_rtos_handle->base->C2 |= UART_C2_SBK_MASK;
         	handle->uart_rtos_handle->base->C2 &= ~UART_C2_SBK_MASK;
-        	/* Send a Break It is just sending one byte 0, *** CHANGE THIS WITH A REAL SYNCH BREAK ****/
-        	//UART_RTOS_Send(handle->uart_rtos_handle, (uint8_t *)&synch_break_byte, 1);
+
+
 
         	vTaskDelay(1);
 
@@ -278,11 +276,11 @@ static void slave_task(void *pvParameters)
 //    	}while(synch_break_byte != 0);
 
     	//DisableIRQ(handle->config.irq); //Disable RX interrupt so the break won't mess with the UART_RTOS driver
-    	handle->uart_rtos_handle->base->S2 |= 0x01<<7; //Clear the LIN Break Detect Interrupt Flag
-    	handle->uart_rtos_handle->base->S2 |= 0x01<<1; //Enable LIN Break Detection
-    	while((handle->uart_rtos_handle->base->S2 &  0x01<<7) == 0x00) vTaskDelay(1); //Wait for the flag to be set
-    	handle->uart_rtos_handle->base->S2 &= ~(0x01<<1); //Disable LIN Break Detection
-    	handle->uart_rtos_handle->base->S2 |= 0x01<<7; //Clear the LIN Break Detect Interrupt Flag
+    	handle->uart_rtos_handle->base->S2 |= 0x01<<UART_S2_LBKDIF_SHIFT; //Clear the LIN Break Detect Interrupt Flag
+    	handle->uart_rtos_handle->base->S2 |= 0x01<<UART_S2_LBKDE_SHIFT; //Enable LIN Break Detection
+    	while((handle->uart_rtos_handle->base->S2 &  0x01<<UART_S2_LBKDIF_SHIFT) == 0x00) vTaskDelay(1); //Wait for the flag to be set
+    	handle->uart_rtos_handle->base->S2 &= ~(0x01<<UART_S2_LBKDE_SHIFT); //Disable LIN Break Detection
+    	handle->uart_rtos_handle->base->S2 |= 0x01<<UART_S2_LBKDIF_SHIFT; //Clear the LIN Break Detect Interrupt Flag
     	//EnableIRQ(handle->config.irq); //Enable RX interrupt so the UART_RTOS driver works again
 
     	/* Wait for header on the UART */
@@ -344,7 +342,7 @@ static void slave_task(void *pvParameters)
 				PRINTF("chsum %x\n\r", chsum);
 
 				/* Send the message data */
-				UART_RTOS_Send(handle->uart_rtos_handle, (uint8_t *)lin1p3_message, message_size);
+				UART_RTOS_Send(handle->uart_rtos_handle, (uint8_t *)lin1p3_message, message_size-1);
 				UART_RTOS_Send(handle->uart_rtos_handle, &chsum, sizeof(chsum));
 			}
 			else {

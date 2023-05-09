@@ -56,7 +56,14 @@
 #define app_message_id_5_d (0x05<<2|message_size_4_bytes_d)
 #define app_message_id_6_d (0x06<<2|message_size_8_bytes_d)
 
-//<<2|0x01) for parity
+/* GPIO pin configuration. */
+#define BOARD_LED_GPIO       BOARD_LED_RED_GPIO
+#define BOARD_LED_GPIO_PIN   BOARD_LED_RED_GPIO_PIN
+#define BOARD_SW_GPIO        BOARD_SW3_GPIO
+#define BOARD_SW_GPIO_PIN    BOARD_SW3_GPIO_PIN
+#define BOARD_SW_PORT        BOARD_SW3_PORT
+#define BOARD_SW_IRQ         BOARD_SW3_IRQ
+#define BOARD_SW_IRQ_HANDLER BOARD_SW3_IRQ_HANDLER
 
 
 /*******************************************************************************
@@ -75,7 +82,8 @@ static void	message_3_callback_slave(void* message);
 /*******************************************************************************
  * Variables
  ******************************************************************************/
-
+extern volatile bool button2_pressed;
+extern volatile bool button1_pressed;
 /*******************************************************************************
  * Code
  ******************************************************************************/
@@ -88,6 +96,8 @@ int main(void)
     BOARD_InitPins();
     BOARD_BootClockRUN();
     BOARD_InitDebugConsole();
+    BOARD_InitGPIOInterrupts();
+    BOARD_InitLEDsPins();
     NVIC_SetPriority(MASTER_UART_RX_TX_IRQn, 5);
     NVIC_SetPriority(SLAVE_UART_RX_TX_IRQn, 5);
 
